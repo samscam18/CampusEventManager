@@ -1,9 +1,13 @@
 package com.example.campus_events.controller;
 
 
+import com.example.campus_events.dto.EventDto;
+import com.example.campus_events.model.College;
 import com.example.campus_events.model.Event;
 import com.example.campus_events.model.EventType;
+import com.example.campus_events.repository.CollegeRepository;
 import com.example.campus_events.repository.EventRepository;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,11 +21,26 @@ import java.util.UUID;
 public class EventController {
 
     private final EventRepository eventRepository;
+    private final CollegeRepository collegeRepository;
 
     @PostMapping
-    public ResponseEntity<Event> createEvent(@RequestBody Event event) {
+    public ResponseEntity<Event> createEvent(@Valid @RequestBody EventDto dto) {
+        College college = collegeRepository.findById(dto.getCollegeId())
+                .orElseThrow(() -> new RuntimeException("College not found"));
+
+        Event event = Event.builder()
+                .college(college)
+                .title(dto.getTitle())
+                .type(dto.getType())
+                .startTime(dto.getStartTime())
+                .endTime(dto.getEndTime())
+                .location(dto.getLocation())
+                .description(dto.getDescription())
+                .build();
+
         return ResponseEntity.ok(eventRepository.save(event));
     }
+
 
     @GetMapping
     public List<Event> getAllEvents() {

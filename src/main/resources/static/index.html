@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Campus Events</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h2 { margin-top: 40px; }
+        form { margin-bottom: 20px; }
+        input, select { margin: 5px; }
+        table { border-collapse: collapse; margin-top: 10px; width: 80%; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    </style>
+</head>
+<body>
+<h1>Campus Events App</h1>
+
+<!-- Colleges -->
+<h2>Colleges</h2>
+<form id="collegeForm">
+    <input type="text" id="collegeName" placeholder="College Name" required>
+    <button type="submit">Create College</button>
+</form>
+<table id="collegeTable">
+    <thead>
+    <tr><th>ID</th><th>Name</th></tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<!-- Students -->
+<h2>Students</h2>
+<form id="studentForm">
+    <input type="text" id="studentName" placeholder="Student Name" required>
+    <input type="email" id="studentEmail" placeholder="Email" required>
+    <select id="studentCollege"></select>
+    <button type="submit">Create Student</button>
+</form>
+<table id="studentTable">
+    <thead>
+    <tr><th>ID</th><th>Name</th><th>Email</th><th>College</th></tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<!-- Events -->
+<h2>Events</h2>
+<form id="eventForm">
+    <input type="text" id="eventTitle" placeholder="Title" required>
+    <input type="text" id="eventType" placeholder="Type" required>
+    <input type="datetime-local" id="eventStart" required>
+    <input type="datetime-local" id="eventEnd" required>
+    <input type="text" id="eventLocation" placeholder="Location">
+    <input type="text" id="eventDescription" placeholder="Description">
+    <select id="eventCollege"></select>
+    <button type="submit">Create Event</button>
+</form>
+<table id="eventTable">
+    <thead>
+    <tr><th>ID</th><th>Title</th><th>Type</th><th>Start</th><th>End</th><th>College</th></tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+    const apiBase = 'http://localhost:8080/api';
+
+    // Utility to fetch and fill select options
+    async function fillSelect(selectId, endpoint) {
+      const res = await fetch(`${apiBase}/${endpoint}`);
+      const data = await res.json();
+      const select = document.getElementById(selectId);
+      select.innerHTML = '';
+      data.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.text = item.name;
+        select.add(option);
+      });
+    }
+
+    // Colleges
+    async function loadColleges() {
+      const res = await fetch(`${apiBase}/colleges`);
+      const data = await res.json();
+      const tbody = document.querySelector('#collegeTable tbody');
+      tbody.innerHTML = '';
+      data.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${c.id}</td><td>${c.name}</td>`;
+        tbody.appendChild(tr);
+      });
+      await fillSelect('studentCollege', 'colleges');
+      await fillSelect('eventCollege', 'colleges');
+    }
+
+    document.getElementById('collegeForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const name = document.getElementById('collegeName').value;
+      await fetch(`${apiBase}/colleges`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({name})
+      });
+      document.getElementById('collegeName').value = '';
+      loadColleges();
+    });
+
+    // Students
+    async function loadStudents() {
+      const res = await fetch(`${apiBase}/students`);
+      const data = await res.json();
+      const tbody = document.querySelector('#studentTable tbody');
+      tbody.innerHTML = '';
+      data.forEach(s => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${s.id}</td><td>${s.name}</td><td>${s.email}</td><td>${s.college?.name || ''}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('studentForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const name = document.getElementById('studentName').value;
+      const email = document.getElementById('studentEmail').value;
+      const collegeId = document.getElementById('studentCollege').value;
+      await fetch(`${apiBase}/students`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({name,email,college:{id:collegeId}})
+      });
+      document.getElementById('studentName').value = '';
+      document.getElementById('studentEmail').value = '';
+      loadStudents();
+    });
+
+    // Events
+    async function loadEvents() {
+      const res = await fetch(`${apiBase}/events`);
+      const data = await res.json();
+      const tbody = document.querySelector('#eventTable tbody');
+      tbody.innerHTML = '';
+      data.forEach(ev => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${ev.id}</td><td>${ev.title}</td><td>${ev.type}</td>
+                        <td>${new Date(ev.startTime).toLocaleString()}</td>
+                        <td>${new Date(ev.endTime).toLocaleString()}</td>
+                        <td>${ev.college?.name || ''}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('eventForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const title = document.getElementById('eventTitle').value;
+      const type = document.getElementById('eventType').value;
+      const startTime = new Date(document.getElementById('eventStart').value).toISOString();
+      const endTime = new Date(document.getElementById('eventEnd').value).toISOString();
+      const location = document.getElementById('eventLocation').value;
+      const description = document.getElementById('eventDescription').value;
+      const collegeId = document.getElementById('eventCollege').value;
+
+      await fetch(`${apiBase}/events`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({title,type,startTime,endTime,location,description,college:{id:collegeId}})
+      });
+
+      document.getElementById('eventTitle').value = '';
+      document.getElementById('eventType').value = '';
+      document.getElementById('eventStart').value = '';
+      document.getElementById('eventEnd').value = '';
+      document.getElementById('eventLocation').value = '';
+      document.getElementById('eventDescription').value = '';
+      loadEvents();
+    });
+
+    // Initial load
+    loadColleges();
+    loadStudents();
+    loadEvents();
+
+</script>
+</body>
+</html>

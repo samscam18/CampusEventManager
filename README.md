@@ -210,7 +210,6 @@ For better understanding and verification, I have included supporting files in t
 
 These resources are helpful for quickly reviewing the system’s design and verifying that the APIs work as intended.
 
-## Tips for Running and Testing Quickly
 
 ## Tips for Running and Testing Quickly
 
